@@ -183,20 +183,19 @@ Api32.create = function(conf)
             data = nil
             
             if http_header ~= nil then
-                -- Received data that propbably represent http header
-                print('method ', http_header.method, ' path ', http_header.path, ' std ', http_header.std, ' content-length ', http_header.content_length)
-
+                -- Received data that probably represent the http header
+                
                 if http_header.content_length == nil
                     or http_header.content_length < self.http_body_min
                     or http_header.content_length > self.http_body_max then
                     -- It seems like request body is too short, too big or does not exist at all.
-                    -- Parse request immediatelly
                     
+                    -- Parse request immediatelly
                     parse_http_request(sck)
                 end
             else
-                -- Received some data which is not represent http header.
-                -- Let's parse it anyway because error 400 shoud be sent to the client
+                -- Received some data which does not represent the http header.
+                -- Let's parse it anyway because error 400 shoud be sent back to the client
                 
                 parse_http_request(sck)
             end
