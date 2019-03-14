@@ -3,7 +3,7 @@
     Website: http://abobija.com
 ]]
 
-local Api = {}
+local Api32 = {}
 
 local function str_starts_with(haystack, needle)
     local h_len = haystack:len()
@@ -56,7 +56,7 @@ local function get_http_header_value(hname, hlines)
     return nil
 end
 
-Api.parse_http_header = function(request)
+local function parse_http_header(request)
     local hlines = str_split(request, "\r\n")
 
     if #hlines > 0 then
@@ -81,7 +81,7 @@ Api.parse_http_header = function(request)
     return nil
 end
 
-Api.create = function(conf) 
+Api32.create = function(conf) 
     local self = {
         port          = conf.port,
         http_body_min = 10,
@@ -179,7 +179,7 @@ Api.create = function(conf)
         if sending then return end
         
         if http_header == nil then
-            http_header = Api.parse_http_header(data)
+            http_header = parse_http_header(data)
             data = nil
             
             if http_header ~= nil then
@@ -230,4 +230,4 @@ Api.create = function(conf)
     return self
 end
 
-return Api
+return Api32
