@@ -44,7 +44,7 @@ end
 
 local function get_http_header_value(hname, hlines)
     for _, hline in pairs(hlines) do
-        if str_starts_with(hline, hname) then
+        if str_starts_with(hline:lower(), hname:lower()) then
             local colon_index = hline:find(':')
 
             if colon_index ~= nil then
