@@ -118,14 +118,14 @@ Api32.create = function(conf)
     
     local srv = net.createServer(net.TCP, 30)
 
-    local sending     = false
+    local sending = false
     local http_header = nil
-    local http_body   = nil
+    local http_req_body_buffer = nil
     
     local function stop_rec()
-        sending     = false
+        sending = false
         http_header = nil
-        http_body   = nil
+        http_req_body_buffer = nil
     end
     
     local function parse_http_request(sck)
@@ -159,13 +159,13 @@ Api32.create = function(conf)
             if ep == nil then
                 response_status = '404 Not Found'
             else
-                http_header   = nil
-                local jreq    = json_parse(http_body)
-                http_body     = nil
-                local jres    = ep.handler(jreq)
-                jreq          = nil
-                res[#res + 1] = json_stringify(jres)
-                jres          = nil
+                http_header          = nil
+                local jreq           = json_parse(http_req_body_buffer)
+                http_req_body_buffer = nil
+                local jres           = ep.handler(jreq)
+                jreq                 = nil
+                res[#res + 1]        = json_stringify(jres)
+                jres                 = nil
             end
         end
         
@@ -179,9 +179,21 @@ Api32.create = function(conf)
         if sending then return end
         
         if http_header == nil then
-            http_header = parse_http_header(data)
-            data = nil
+            local eof_head = data:find("\r\n\r\n")
+            local head_data = nil
             
+            if eof_head ~= nil then
+                head_data = data:sub(1, eof_head - 1)
+                http_req_body_buffer = data:sub(eof_head + 4)
+            end
+            
+            data = nil
+
+            if head_data ~= nil then
+                http_header = parse_http_header(head_data)
+                head_data = nil
+            end
+
             if http_header ~= nil then
                 -- Received data that probably represent the http header
                 
@@ -191,30 +203,35 @@ Api32.create = function(conf)
                     -- It seems like request body is too short, too big or does not exist at all.
                     
                     -- Parse request immediatelly
-                    parse_http_request(sck)
+                    return parse_http_request(sck)
                 end
             else
                 -- Received some data which does not represent the http header.
                 -- Let's parse it anyway because error 400 shoud be sent back to the client
                 
-                parse_http_request(sck)
+                return parse_http_request(sck)
             end
-        else
-            -- Receiving body packets
-            
-            if http_body == nil then
-                http_body = data
-            else
-                http_body = http_body .. data
-            end
+        end
 
-            local http_body_len = http_body:len()
+        if data ~= nil and http_header ~= nil then
+            -- Buffering request body
             
-            if http_body_len >= http_header.content_length
+            if http_req_body_buffer == nil then
+                http_req_body_buffer = data
+            else
+                http_req_body_buffer = http_req_body_buffer .. data
+            end
+        end
+
+        -- Check if body has received
+        if http_req_body_buffer ~= nil then
+            local http_body_len = http_req_body_buffer:len()
+            
+            if (http_header.content_length ~= nil and http_body_len >= http_header.content_length)
                 or http_body_len >= self.http_body_max then
                 -- Received enough bytes of request body.
                 
-                parse_http_request(sck)
+                return parse_http_request(sck)
             end
         end
     end
