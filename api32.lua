@@ -217,16 +217,17 @@ Api32.create = function(conf)
         sck:on('sent', send)
         
         local response_status = '200 OK'
+        local response_body = nil
         
         res[1] = 'HTTP/1.1 '
         res[#res + 1] = "Content-Type: application/json; charset=UTF-8\r\n"
-        res[#res + 1] = "\r\n"
         
         if http_header == nil then
             response_status = '400 Bad Request'
         else
             if not is_authorized() then
                 response_status = '401 Unauthorized'
+                res[#res + 1]   = 'WWW-Authenticate: Basic realm="User Visible Realm", charset="UTF-8"\r\n'
             else
                 local ep = get_endpoint(http_header.method, http_header.path)
                 
@@ -238,13 +239,19 @@ Api32.create = function(conf)
                     http_req_body_buffer = nil
                     local jres           = ep.handler(jreq)
                     jreq                 = nil
-                    res[#res + 1]        = json_stringify(jres)
+                    response_body        = json_stringify(jres)
                     jres                 = nil
                 end
             end
         end
         
         res[1] = res[1] .. response_status .. "\r\n"
+        res[#res + 1] = "\r\n"
+
+        if response_body ~= nil then
+            res[#res + 1] = response_body
+            response_body = nil
+        end
         
         stop_rec()
         send(sck)
