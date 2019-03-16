@@ -1,6 +1,12 @@
 --[[
-    Author: Alija Bobija
-    Website: http://abobija.com
+    Title          : Library for easy way of creating HTTP JSON Api Service for ESP32
+    Author         : Alija Bobija
+    Author-Website : https://abobija.com
+    GitHub Repo    : https://github.com/abobija/api32
+    
+    Dependencies:
+        - sjson
+        - encoder
 ]]
 
 local Api32 = {}
@@ -56,7 +62,48 @@ local function get_http_header_value(hname, hlines)
     return nil
 end
 
-local function parse_http_header(request)
+local function get_auth_from_http_header(hlines)
+    local auth_line = get_http_header_value('Authorization', hlines)
+
+    if auth_line == nil then return nil end
+
+    local parts = str_split(auth_line)
+
+    if #parts == 2 and parts[1]:lower() == 'basic' then
+        local key = parts[2]
+        parts = nil
+
+        local ok
+        local decoded_key
+        ok, decoded_key = pcall(encoder.fromBase64, key)
+        
+        key = nil
+
+        if ok then
+            parts = str_split(decoded_key, ':')
+            decoded_key = nil
+
+            if #parts == 2 then
+                return {
+                    user = parts[1],
+                    pwd  = parts[2]
+                }
+            end
+        end
+    end
+    
+    return nil
+end
+
+local function parse_http_header(request, params)
+    local options = {
+        parse_auth = false
+    }
+
+    if params ~= nil then
+        if params.parse_auth ~= nil then options.parse_auth = params.parse_auth end
+    end
+
     local hlines = str_split(request, "\r\n")
 
     if #hlines > 0 then
@@ -66,9 +113,18 @@ local function parse_http_header(request)
             local result = {
                 method         = hline1_parts[1],
                 path           = hline1_parts[2],
-                std            = hline1_parts[3],
-                content_length = get_http_header_value('Content-Length', hlines)
+                std            = hline1_parts[3]
             }
+
+            hline1_parts = nil
+            
+            result.content_length = get_http_header_value('Content-Length', hlines)
+
+            if options.parse_auth then
+                result.auth = get_auth_from_http_header(hlines)
+            end
+            
+            hlines = nil
 
             if result.content_length ~= nil then
                 result.content_length = tonumber(result.content_length)
@@ -83,11 +139,17 @@ end
 
 Api32.create = function(conf) 
     local self = {
+        http_body_min = conf.http_body_min,
+        http_body_max = conf.http_body_max,
         port          = conf.port,
-        http_body_min = 10,
-        http_body_max = 512
+        auth          = conf.auth
     }
-
+    
+    -- Defaults
+    if self.http_body_min == nil then self.http_body_min = 10 end
+    if self.http_body_max == nil then self.http_body_max = 512 end
+    if self.port == nil then self.port = 80 end
+    
     local endpoints = {}
     
     self.on = function(method, path, handler)
@@ -121,11 +183,20 @@ Api32.create = function(conf)
     local sending = false
     local http_header = nil
     local http_req_body_buffer = nil
-    
+
     local function stop_rec()
         sending = false
         http_header = nil
         http_req_body_buffer = nil
+    end
+
+    local is_authorized = function()
+        return self.auth == nil or (
+            http_header ~= nil
+            and http_header.auth ~= nil
+            and self.auth.user == http_header.auth.user
+            and self.auth.pwd == http_header.auth.pwd
+        )
     end
     
     local function parse_http_request(sck)
@@ -154,18 +225,22 @@ Api32.create = function(conf)
         if http_header == nil then
             response_status = '400 Bad Request'
         else
-            local ep = get_endpoint(http_header.method, http_header.path)
-            
-            if ep == nil then
-                response_status = '404 Not Found'
+            if not is_authorized() then
+                response_status = '401 Unauthorized'
             else
-                http_header          = nil
-                local jreq           = json_parse(http_req_body_buffer)
-                http_req_body_buffer = nil
-                local jres           = ep.handler(jreq)
-                jreq                 = nil
-                res[#res + 1]        = json_stringify(jres)
-                jres                 = nil
+                local ep = get_endpoint(http_header.method, http_header.path)
+                
+                if ep == nil then
+                    response_status = '404 Not Found'
+                else
+                    http_header          = nil
+                    local jreq           = json_parse(http_req_body_buffer)
+                    http_req_body_buffer = nil
+                    local jres           = ep.handler(jreq)
+                    jreq                 = nil
+                    res[#res + 1]        = json_stringify(jres)
+                    jres                 = nil
+                end
             end
         end
         
@@ -190,13 +265,14 @@ Api32.create = function(conf)
             data = nil
 
             if head_data ~= nil then
-                http_header = parse_http_header(head_data)
+                http_header = parse_http_header(head_data, {
+                    parse_auth = self.auth ~= nil
+                })
+                
                 head_data = nil
             end
 
             if http_header ~= nil then
-                -- Received data that probably represent the http header
-                
                 if http_header.content_length == nil
                     or http_header.content_length < self.http_body_min
                     or http_header.content_length > self.http_body_max then
