@@ -12,10 +12,7 @@
 local Api32 = {}
 
 local function str_starts_with(haystack, needle)
-    local h_len = haystack:len()
-    local n_len = needle:len()
-
-    return n_len <= h_len and haystack:sub(1, n_len) == needle
+    return haystack:sub(1, #needle) == needle
 end
 
 local function str_split(inputstr, sep)
