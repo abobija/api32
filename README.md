@@ -3,7 +3,7 @@ Lua library for simple way of creating JSON APIs for ESP32
 
 ## Usage
 ### Registration of `GET` endpoint
-To registrate `GET` endpoint, use the `on_get` method.
+To register `GET` endpoint, use the `on_get` method.
 ```
 require('api32')
 .create()
@@ -20,7 +20,7 @@ By sending HTTP `GET` request to previously created `info` endpoint (e.g. 192.16
 ```
 
 ### Registration of `POST` endpoint
-To registrate `POST` endpoint, just use the `on_post` method, instead of `on_get`.
+To register `POST` endpoint, just use the `on_post` method, instead of `on_get`.
 ```
 require('api32')
 .create()
