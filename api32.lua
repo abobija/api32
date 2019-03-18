@@ -24,16 +24,12 @@ local function str_split(inputstr, sep)
 end
 
 local function json_parse(json_str)
-    if json_str == nil then return nil end
-
     local ok
     local result
-    
     ok, result = pcall(sjson.decode, json_str)
 
-    if not ok then return nil end
-    
-    return result
+    if ok then return result end
+    return nil
 end
 
 local function json_stringify(table)
@@ -108,9 +104,9 @@ local function parse_http_header(request, params)
         
         if #hline1_parts == 3 and hline1_parts[3] == 'HTTP/1.1' then
             local result = {
-                method         = hline1_parts[1],
-                path           = hline1_parts[2],
-                std            = hline1_parts[3]
+                method = hline1_parts[1],
+                path   = hline1_parts[2],
+                std    = hline1_parts[3]
             }
 
             hline1_parts = nil
