@@ -37,7 +37,7 @@ By sending HTTP `POST` request to `/config` endpoint, the next `JSON` response w
 ```
 
 ## Security
-Api32 implements [Basic HTTP Authorization](https://en.wikipedia.org/wiki/Basic_access_authentication). To enable Authorization, parameter `auth` needs to be passed to the `create` method.
+Api32 implements [Basic HTTP Authorization](https://en.wikipedia.org/wiki/Basic_access_authentication). To enable Authorization, property `auth` of options table, needs to be passed to the `create` method.
 ```
 require('api32')
 .create({
