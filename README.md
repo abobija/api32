@@ -1,6 +1,8 @@
 # Api32
 Lua library for simple way of creating JSON APIs for ESP32
 
+![](doc/img/client_api32_jreq_jres.png)
+
 ## Usage
 ### Registration of `GET` endpoint
 To register `GET` endpoint, use the `on_get` method.
