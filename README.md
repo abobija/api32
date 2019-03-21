@@ -1,7 +1,7 @@
 # Api32
 Lua library for simple way of creating JSON APIs for ESP32.
 
-Api32 is HTTP Server and JSON REST API - at once.
+Api32 is HTTP Server and JSON REST API - in once.
 
 ![](doc/img/client_api32_jreq_jres.png)
 
