@@ -130,18 +130,24 @@ local function parse_http_header(request, params)
     return nil
 end
 
-Api32.create = function(conf) 
-    local self = {
-        http_body_min = conf.http_body_min,
-        http_body_max = conf.http_body_max,
-        port          = conf.port,
-        auth          = conf.auth
-    }
-    
-    -- Defaults
-    if self.http_body_min == nil then self.http_body_min = 10 end
-    if self.http_body_max == nil then self.http_body_max = 512 end
-    if self.port == nil then self.port = 80 end
+-- Extends one level only
+local function extend(tbl, with)
+    if with == nil then return tbl end
+
+    for k, v in pairs(with) do
+        if tbl.k == nil then
+            tbl.k = with.k
+        end
+    end
+end
+
+Api32.create = function(conf)
+    local self = extend({
+        http_body_min = 10,
+        http_body_max = 512,
+        port          = 80,
+        auth          = nil
+    }, conf)
     
     local endpoints = {}
     
