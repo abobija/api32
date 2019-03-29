@@ -132,13 +132,15 @@ end
 
 -- Extends one level only
 local function extend(tbl, with)
-    if with == nil then return tbl end
-
-    for k, v in pairs(with) do
-        if tbl.k == nil then
-            tbl.k = with.k
+    if with ~= nil then
+        for k, v in pairs(with) do
+            if tbl[k] == nil then
+                tbl[k] = with[k]
+            end
         end
     end
+
+    return tbl
 end
 
 Api32.create = function(conf)
