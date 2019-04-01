@@ -6,7 +6,7 @@ Api32 is HTTP Server and JSON REST API - in one.
 ![](doc/img/client_api32_jreq_jres.png)
 
 ## Demo
-[![api32.lua - Create REST API on ESP32)](https://img.youtube.com/vi/HhT2ixEH4cU/mqdefault.jpg)](https://www.youtube.com/watch?v=HhT2ixEH4cU)
+[![api32.lua - Create REST API on ESP32](https://img.youtube.com/vi/HhT2ixEH4cU/mqdefault.jpg)](https://www.youtube.com/watch?v=HhT2ixEH4cU)
 
 ## Usage
 ### Registration of `GET` endpoint
