@@ -55,7 +55,7 @@ require('api32')
 })
 .on_get('/', function(jreq)
 	return {
-		message = 'I'm secured!'
+		message = "I'm secured!"
 	}
 end)
 ```
