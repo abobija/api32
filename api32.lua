@@ -15,6 +15,10 @@ local function str_starts_with(haystack, needle)
     return haystack:sub(1, #needle) == needle
 end
 
+local function str_ends_with(str, ending)
+   return ending == "" or str:sub(-#ending) == ending
+end
+
 local function str_split(inputstr, sep)
     if sep == nil then sep = "%s" end
     local result = {}
@@ -202,13 +206,30 @@ Api32.create = function(conf)
     
     local function parse_http_request(sck)
         local res = {}
+        local stream_file = nil
         
         local send = function(_sck)
             sending = true
+
+            local close_socket = false
             
             if #res > 0 then
                 _sck:send(table.remove(res, 1))
+            elseif stream_file ~= nil then
+                local line = stream_file:readline()
+                
+                if line ~= nil then
+                    _sck:send(line)
+                else
+                    stream_file:close()
+                    stream_file = nil
+                    close_socket = true
+                end
             else
+                close_socket = true
+            end
+
+            if close_socket then
                 sending = false
                 _sck:close()
                 res = nil
@@ -218,10 +239,11 @@ Api32.create = function(conf)
         sck:on('sent', send)
         
         local response_status = '200 OK'
+        local content_type = 'application/json'
         local response_body = nil
         
         res[1] = 'HTTP/1.1 '
-        res[#res + 1] = "Content-Type: application/json; charset=UTF-8\r\n"
+        res[2] = 'Content-Type: CTYPE; charset=UTF-8\r\n'
         
         if http_header == nil then
             response_status = '400 Bad Request'
@@ -235,18 +257,35 @@ Api32.create = function(conf)
                 if ep == nil then
                     response_status = '404 Not Found'
                 else
-                    http_header          = nil
-                    local jreq           = json_parse(http_req_body_buffer)
-                    http_req_body_buffer = nil
-                    local jres           = ep.handler(jreq)
-                    jreq                 = nil
-                    response_body        = json_stringify(jres)
-                    jres                 = nil
+                    http_header = nil
+                    
+                    if type(ep.handler) == 'function' then -- custom handler
+                        local jreq = json_parse(http_req_body_buffer)
+                        http_req_body_buffer = nil
+                        local jres = ep.handler(jreq)
+                        jreq = nil
+                        response_body = json_stringify(jres)
+                        jres = nil
+                    elseif type(ep.handler) == 'string' then -- static file
+                        -- ep.handler is filename in this case
+                        http_req_body_buffer = nil
+
+                        if not file.exists(ep.handler) then
+                            response_status = '404 Not Found'
+                        else
+                            if str_ends_with(ep.handler, 'html') then
+                                content_type = 'text/html'
+                            end
+                            
+                            stream_file = file.open(ep.handler)
+                        end
+                    end
                 end
             end
         end
         
         res[1] = res[1] .. response_status .. "\r\n"
+        res[2] = res[2]:gsub('CTYPE', content_type)
         res[#res + 1] = "\r\n"
 
         if response_body ~= nil then
