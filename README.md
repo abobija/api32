@@ -45,7 +45,7 @@ By sending HTTP `POST` request to `/config` endpoint, the next `JSON` response w
 
 ### Serving static file
 
-To server a static file with `Api32`, instead of handler function, you need to provide filename.
+To serve a static file with `Api32`, instead of handler function, you need to provide filename.
 
 ```lua
 api = require('api32')
