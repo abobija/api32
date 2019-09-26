@@ -43,6 +43,16 @@ By sending HTTP `POST` request to `/config` endpoint, the next `JSON` response w
 { "message" : "Congrats! You have successfully accessed the POST endpoint." }
 ```
 
+### Serving static file
+
+To server a static file with `Api32`, instead of handler function, you need to provide filename.
+
+```lua
+api = require('api32')
+.create()
+.on_get('/', 'index.html')
+```
+
 ## Security
 Api32 implements [Basic HTTP Authorization](https://en.wikipedia.org/wiki/Basic_access_authentication). To enable Authorization, property `auth` of options table, needs to be passed to the `create` method.
 ```lua
